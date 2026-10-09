@@ -55,7 +55,7 @@ button { font-family: var(--f); color: var(--ink); }
 }
 .ticket .no { font-size: 12px; letter-spacing: .08em; opacity: .7; font-variant-numeric: tabular-nums; }
 .ticket .dish { font-size: 40px; line-height: 1.05; }
-.ticket .name { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.ticket .name { font-size: 14px; font-weight: 700; text-align: center; line-height: 1.25; }
 .ticket .steps { display: flex; gap: 6px; font-size: 19px; }
 .ticket .steps span { display: flex; flex-direction: column; align-items: center; line-height: 1; }
 .ticket .steps small { font-size: 12px; margin-top: 2px; }
@@ -154,13 +154,14 @@ body.duo #toastB { right: 14px; background: var(--pB); }
 .row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
 /* タイトル */
-.logo { text-align: center; margin: 4px 0 6px; }
+.logo { text-align: center; margin: 4px 0 6px; display: flex; flex-direction: column; align-items: center; }
 .logo .big {
   display: inline-block; font-size: clamp(40px, 7vw, 68px); font-weight: 700; letter-spacing: .04em;
   color: var(--paper); background: var(--tomato); border: 4px solid var(--ink); border-radius: 14px;
   padding: 4px 22px 8px; transform: rotate(-2deg); box-shadow: 6px 6px 0 var(--ink);
 }
 .logo .big rt { color: var(--paper); font-size: .32em; }
+.shop { display: inline-block; margin-top: 14px; font-size: 20px; font-weight: 700; letter-spacing: .1em; border-bottom: 4px solid var(--butter); padding: 0 6px 2px; }
 .lead { text-align: center; font-size: 18px; margin: 14px 0 18px; line-height: 1.7; }
 .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .choice {
@@ -218,7 +219,7 @@ body.duo #toastB { right: 14px; background: var(--pB); }
 </style>
 </head>
 <body class="solo">
-<!-- build: 2026-10-09 -->
+<!-- build: 2026-10-09-2 -->
 <canvas id="c"></canvas>
 <div id="divider"></div>
 <div id="orders"></div>
@@ -253,12 +254,12 @@ import * as THREE from 'three';
 // ここは純粋なJS。Node.jsのシミュレーションと、HTML本体の両方で同じコードを使う。
 
 const CFG = {
-  version: 'v2026-10-09',
+  version: 'v2026-10-09-2',
   // ---- レベルごとの設定（数値だけ直せばバランスが変わる） ----
   levels: {
     1: {
       name: 'レベル1', roundTime: 150,
-      menu: ['medamayaki'], crates: ['egg'], boards: 0,
+      menu: ['burger'], crates: ['patty'], boards: 0,
       maxOrders: 1, duoMaxOrders: 2,   // 1人用は注文1つずつ（2人用は2つまで）
       orderInterval: 2, emptyDelay: 1.5,
       orderTime: 0,                    // 0 = 時間切れなし
@@ -267,7 +268,7 @@ const CFG = {
     },
     2: {
       name: 'レベル2', roundTime: 150,
-      menu: ['medamayaki', 'salad'], crates: ['egg', 'lettuce', 'tomato'], boards: 2,
+      menu: ['burger', 'tomatoBurger'], crates: ['patty', 'tomato'], boards: 2,
       maxOrders: 2, duoMaxOrders: 3,
       orderInterval: 20, emptyDelay: 2,
       orderTime: 75,
@@ -276,33 +277,33 @@ const CFG = {
     },
     3: {
       name: 'レベル3', roundTime: 150,
-      menu: ['medamayaki', 'salad', 'steak'], crates: ['egg', 'lettuce', 'tomato', 'meat'], boards: 2,
-      maxOrders: 3, duoMaxOrders: 4,
+      menu: ['burger', 'tomatoBurger', 'blt'], crates: ['patty', 'bacon', 'tomato', 'lettuce'], boards: 2,
+      maxOrders: 3, duoMaxOrders: 3, duoIntervalMul: 1.0,  // 2人用は右の人の仕事が多いので注文ペースは1人用と同じ
       orderInterval: 15, emptyDelay: 2,
-      orderTime: 65,
-      cookTime: 6, burnGrace: 6,
+      orderTime: 70,
+      cookTime: 6, burnGrace: 7,
       chopTaps: 5, autoPlate: false, guide: false,
     },
   },
   duoIntervalMul: 0.7,       // 2人用は注文が少し早く来る
   stars: {                   // 星1・2・3に必要な皿数
     solo: { 1: [3, 6, 9], 2: [2, 4, 6], 3: [2, 4, 6] },
-    duo:  { 1: [4, 7, 10], 2: [3, 6, 8], 3: [3, 6, 9] },
+    duo:  { 1: [4, 7, 10], 2: [3, 6, 8], 3: [3, 5, 8] },
   },
   scoreBase: 100, scoreSpeedBonus: 50,
   autoPlateDelay: 0.5,
 };
 
 const ING = {
-  egg:     { name: 'たまご', cut: false, cook: true },
-  lettuce: { name: 'レタス', cut: true,  cook: false },
-  tomato:  { name: 'トマト', cut: true,  cook: false },
-  meat:    { name: 'にく',   cut: true,  cook: true },
+  patty:   { name: 'パティ',   cut: false, cook: true },
+  bacon:   { name: 'ベーコン', cut: false, cook: true },
+  tomato:  { name: 'トマト',   cut: true,  cook: false },
+  lettuce: { name: 'レタス',   cut: true,  cook: false },
 };
 const RECIPES = {
-  medamayaki: { name: 'めだまやき',       items: ['egg'] },
-  salad:      { name: 'サラダ',           items: ['lettuce', 'tomato'] },
-  steak:      { name: 'サイコロステーキ', items: ['meat', 'tomato'] },
+  burger:       { name: 'ハンバーガー',           items: ['patty'] },
+  tomatoBurger: { name: 'トマトバーガー',         items: ['patty', 'tomato'] },
+  blt:          { name: 'ベーコンレタスバーガー', items: ['patty', 'bacon', 'lettuce'] },
 };
 
 function mulberry32(a) {
@@ -364,7 +365,7 @@ function newState(mode, level, seed = 1) {
     served: 0, missed: 0, burntCount: 0, score: 0, stars: 0,
     hands: { A: null, B: null }, orders: [], orderSeq: 0,
     maxOrders: duo ? L.duoMaxOrders : L.maxOrders,
-    interval: L.orderInterval * (duo && level > 1 ? CFG.duoIntervalMul : 1),
+    interval: L.orderInterval * (duo && level > 1 ? (L.duoIntervalMul ?? CFG.duoIntervalMul) : 1),
     spawnTimer: 1.0, rng: mulberry32(seed), events: [], stations: {}, order: [],
   };
   const add = (o) => { S.stations[o.id] = o; S.order.push(o.id); };
@@ -746,9 +747,11 @@ const stripeTex = canvasTex(128, 128, (g, w, h) => {
   for (let i = -4; i < 8; i++) { g.beginPath(); g.moveTo(i * 32, 0); g.lineTo(i * 32 + 16, 0); g.lineTo(i * 32 + 16 + h, h); g.lineTo(i * 32 + h, h); g.fill(); }
 });
 const spotTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = '#f4fbf6'; g.fillRect(0, 0, w, h);
-  g.setLineDash([18, 12]); g.strokeStyle = '#7fb89a'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
-  g.beginPath(); g.arc(w / 2, h / 2, 82, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = '#c93b33'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#e2483d'; roundRect(g, 14, 14, w - 28, h - 28, 26); g.fill();
+  g.fillStyle = '#fff6df'; roundRect(g, 40, 40, w - 80, h - 80, 14); g.fill();
+  g.strokeStyle = '#e8c98e'; g.lineWidth = 4;
+  for (let i = 60; i < w - 40; i += 24) { g.beginPath(); g.moveTo(i, 44); g.lineTo(i, h - 44); g.stroke(); }
 });
 const glowTex = canvasTex(256, 256, (g, w, h) => {
   const grd = g.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, 128);
@@ -800,8 +803,8 @@ const LAYOUT = {
   bell:    () => ({ x: 5.95, z: .1, w: 1.7, d: 2.7 }),
 };
 const HANDOFF_X = -.6;
-const ING_EMO = { egg: '🥚', lettuce: '🥬', tomato: '🍅', meat: '🥩' };
-const DISH_EMO = { medamayaki: '🍳', salad: '🥗', steak: '🥩' };
+const ING_EMO = { patty: '🥩', bacon: '🥓', tomato: '🍅', lettuce: '🥬' };
+const DISH_EMO = { burger: '🍔', tomatoBurger: '🍔', blt: '🍔' };
 const COL = { A: 0x2f7de1, B: 0xef8423, solo: 0xffc93a, ok: 0x2fae5f, bad: 0xff4030 };
 
 // ---------- 食べ物のモデル ----------
@@ -811,60 +814,61 @@ function part(geo, raw, cooked, o = {}) {
   m.userData.cols = { raw, cooked: cooked ?? raw };
   return m;
 }
-function friedEgg() {
+function foodMesh(f, onStove, layer) {
+  // layer = true のときは、バンズの上に重ねる平たい形
   const g = new THREE.Group();
-  const white = part(new THREE.CylinderGeometry(.4, .42, .05, 20), 0xd2cab8, 0xffffff, { roughness: .5 });
-  white.scale.set(1, 1, .85); g.add(white);
-  const yolk = part(new THREE.SphereGeometry(.15, 16, 10), 0xffb800, 0xffa000, { roughness: .35 });
-  yolk.scale.y = .55; yolk.position.set(.05, .03, -.02); g.add(yolk);
-  g.userData.cookable = true;
-  return g;
-}
-function foodMesh(f, onStove) {
-  const g = new THREE.Group();
-  const cooked = isCooked(f, S.L);
   switch (f.ing) {
-    case 'egg':
-      if (!onStove && !cooked) {
-        const e = new THREE.Mesh(new THREE.SphereGeometry(.2, 16, 12), mat(0xfaf3e3, { roughness: .4 }));
-        e.scale.y = 1.3; e.position.y = .25; g.add(e);
-      } else { const fe = friedEgg(); fe.position.y = .03; g.add(fe); g.userData.cookable = true; }
+    case 'patty': {
+      const m = part(new THREE.CylinderGeometry(.36, .37, .12, 22), 0xd77a7f, 0x6b3a22, { roughness: .9 });
+      m.position.y = .06; g.add(m);
+      g.userData.cookable = true;
       break;
-    case 'lettuce':
-      if (!f.cut) {
-        for (let i = 0; i < 6; i++) {
-          const s = new THREE.Mesh(new THREE.IcosahedronGeometry(.2, 0), mat(i % 2 ? 0x7bc043 : 0x9bd65a, { flatShading: true }));
-          const a = i / 6 * Math.PI * 2; s.position.set(Math.cos(a) * .13, .2 + (i % 3) * .05, Math.sin(a) * .13); g.add(s);
+    }
+    case 'bacon': {
+      for (let i = 0; i < 2; i++) {
+        const st = new THREE.Group();
+        for (let j = 0; j < 4; j++) {
+          const seg = part(new THREE.BoxGeometry(.18, .035, .13), j % 2 ? 0xf3b0aa : 0xe06f78, j % 2 ? 0xd08a4a : 0x9b3d22);
+          seg.position.set((j - 1.5) * .17, .02 + (j % 2) * .02, 0); seg.rotation.z = (j % 2 ? -1 : 1) * .2; st.add(seg);
         }
-      } else {
-        for (let i = 0; i < 7; i++) {
-          const s = new THREE.Mesh(new THREE.BoxGeometry(.18, .04, .12), mat(i % 2 ? 0x7bc043 : 0xa9de6a));
-          s.position.set((i % 4 - 1.5) * .15, .03 + (i > 3 ? .04 : 0), (i > 3 ? .08 : -.08)); s.rotation.y = i * .9; g.add(s);
-        }
+        st.position.z = (i - .5) * .17; g.add(st);
       }
+      g.userData.cookable = true;
       break;
+    }
     case 'tomato':
       if (!f.cut) {
         const t = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 14), mat(0xe2483d, { roughness: .35 }));
         t.scale.y = .85; t.position.y = .21; g.add(t);
         const st = new THREE.Mesh(new THREE.ConeGeometry(.08, .08, 5), mat(0x3e8a2e)); st.position.y = .43; st.rotation.x = Math.PI; g.add(st);
+      } else if (layer) {
+        for (let i = 0; i < 2; i++) {
+          const sl = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .05, 18), [mat(0xe2483d), mat(0xf27a63), mat(0xf27a63)]);
+          sl.position.set((i - .5) * .3, .025, (i - .5) * .06); g.add(sl);
+        }
       } else {
         for (let i = 0; i < 3; i++) {
-          const s = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .05, 16, 1, false, 0, Math.PI), [mat(0xe2483d), mat(0xf27a63), mat(0xf27a63)]);
-          s.position.set((i - 1) * .15, .03, 0); s.rotation.y = i * .4; g.add(s);
+          const sl = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .05, 16), [mat(0xe2483d), mat(0xf27a63), mat(0xf27a63)]);
+          sl.position.set((i - 1) * .2, .03, 0); g.add(sl);
         }
       }
       break;
-    case 'meat':
+    case 'lettuce':
       if (!f.cut) {
-        const m = part(new THREE.BoxGeometry(.62, .16, .44), 0xd9566a, 0x8a4a2b); m.position.y = .08; g.add(m);
-        const fat = new THREE.Mesh(new THREE.BoxGeometry(.64, .17, .06), mat(0xf6e7e0)); fat.position.set(0, .08, -.2); g.add(fat);
-      } else {
         for (let i = 0; i < 6; i++) {
-          const m = part(new THREE.BoxGeometry(.16, .14, .16), 0xd9566a, 0x7d4426);
-          m.position.set((i % 3 - 1) * .2, .07, (i < 3 ? -.1 : .1)); m.rotation.y = i * .5; g.add(m);
+          const sp = new THREE.Mesh(new THREE.IcosahedronGeometry(.2, 0), mat(i % 2 ? 0x7bc043 : 0x9bd65a, { flatShading: true }));
+          const an = i / 6 * Math.PI * 2; sp.position.set(Math.cos(an) * .13, .2 + (i % 3) * .05, Math.sin(an) * .13); g.add(sp);
         }
-        g.userData.cookable = true;
+      } else if (layer) {
+        for (let i = 0; i < 7; i++) {
+          const lf = new THREE.Mesh(new THREE.BoxGeometry(.22, .03, .16), mat(i % 2 ? 0x7bc043 : 0xa9de6a));
+          const an = i / 7 * Math.PI * 2; lf.position.set(Math.cos(an) * .3, .02 + (i % 2) * .015, Math.sin(an) * .3); lf.rotation.y = -an; g.add(lf);
+        }
+      } else {
+        for (let i = 0; i < 7; i++) {
+          const lf = new THREE.Mesh(new THREE.BoxGeometry(.18, .04, .12), mat(i % 2 ? 0x7bc043 : 0xa9de6a));
+          lf.position.set((i % 4 - 1.5) * .15, .03 + (i > 3 ? .04 : 0), (i > 3 ? .08 : -.08)); lf.rotation.y = i * .9; g.add(lf);
+        }
       }
       break;
   }
@@ -883,17 +887,28 @@ function tintFood(g, f) {
     o.material.color.copy(_c1);
   });
 }
-function plateMesh(items) {
+const LAYER_ORDER = ['patty', 'bacon', 'lettuce', 'tomato'];   // 下から重ねる順
+const LAYER_H = { patty: .12, bacon: .06, lettuce: .05, tomato: .05 };
+function bunMesh(items) {
   const g = new THREE.Group();
-  const pl = new THREE.Mesh(new THREE.CylinderGeometry(.52, .42, .07, 28), mat(0xffffff, { roughness: .3 }));
-  pl.position.y = .035; g.add(pl);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(.48, .03, 6, 28), mat(0x9fc4e8, { roughness: .3 }));
-  rim.rotation.x = Math.PI / 2; rim.position.y = .07; g.add(rim);
-  const pos = items.length > 1 ? [[-.18, -.04], [.2, .08]] : [[0, 0]];
-  items.forEach((ing, i) => {
+  const paper = new THREE.Mesh(new THREE.CylinderGeometry(.56, .56, .012, 24), mat(0xfff3d6)); paper.position.y = .006; g.add(paper);
+  const bottom = new THREE.Mesh(new THREE.CylinderGeometry(.44, .41, .14, 24), mat(0xd9954a, { roughness: .8 }));
+  bottom.position.y = .08; g.add(bottom);
+  let y = .15;
+  const sorted = [...items].sort((a, b) => LAYER_ORDER.indexOf(a) - LAYER_ORDER.indexOf(b));
+  for (const ing of sorted) {
     const f = { kind: 'food', ing, cut: ING[ing].cut, cook: S.L.cookTime, burnt: false };
-    const m = foodMesh(f, false); m.scale.setScalar(.8); m.position.set(pos[i][0], .07, pos[i][1]); g.add(m);
-  });
+    const m = foodMesh(f, false, true); m.scale.set(1.28, 1, 1.28); m.position.y = y; g.add(m); y += LAYER_H[ing];   // バンズから少しはみ出させて具が見えるように
+  }
+  if (items.length && plateRecipe(S, { items })) {   // ぐざいが そろったら うえの バンズを のせる
+    const top = new THREE.Mesh(new THREE.SphereGeometry(.45, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xe0a050, { roughness: .6 }));
+    top.scale.y = .62; top.position.y = y; g.add(top);
+    for (let i = 0; i < 10; i++) {
+      const an = i * 2.4, r = .12 + (i % 3) * .08;
+      const sd = new THREE.Mesh(new THREE.SphereGeometry(.025, 6, 4), mat(0xfff6e0));
+      sd.scale.set(1, .5, 1.6); sd.position.set(Math.cos(an) * r, y + Math.sqrt(Math.max(0, .45 * .45 - r * r)) * .62, Math.sin(an) * r); g.add(sd);
+    }
+  }
   return g;
 }
 
@@ -1087,25 +1102,24 @@ function buildModel(v) {
       body.position.y = .1; g.add(body);
       const knob = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .08, 12), mat(0xe2483d));
       knob.rotation.x = Math.PI / 2; knob.position.set(.55, .1, lay.d / 2 + .02); g.add(knob);
-      const burner = new THREE.Mesh(new THREE.TorusGeometry(.38, .05, 8, 24), mat(0x22252b));
-      burner.rotation.x = Math.PI / 2; burner.position.y = .21; g.add(burner);
       const flames = new THREE.Group();
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 8; i++) {
         const fl = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 6), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x3aa0ff : 0xffa040 }));
-        const a = i / 12 * Math.PI * 2; fl.position.set(Math.cos(a) * .38, .3, Math.sin(a) * .38); flames.add(fl);
+        fl.position.set((i - 3.5) * .16, .28, lay.d / 2 - .02); flames.add(fl);
       }
       flames.visible = false; g.add(flames); v.flames = flames;
-      const pan = new THREE.Mesh(new THREE.CylinderGeometry(.6, .5, .1, 28), mat(0x2d3038, { metalness: .4, roughness: .45 }));
-      pan.position.y = .33; g.add(pan);
-      const ph = new THREE.Mesh(new THREE.BoxGeometry(.55, .05, .1), mat(0x1c1d22)); ph.position.set(.82, .37, .2); ph.rotation.y = -.4; g.add(ph);
-      v.slot.position.y = .38;
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(lay.w - .15, .08, lay.d - .25), mat(0x6a707a, { metalness: .6, roughness: .35 }));
+      plate.position.set(0, .24, -.05); g.add(plate);
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(lay.w - .15, .14, .05), mat(0x4a4f58, { metalness: .5, roughness: .4 }));
+      rim.position.set(0, .3, -.05 - (lay.d - .25) / 2); g.add(rim);
+      v.slot.position.set(0, .28, -.05);
       v.gauge = makeSprite(256, 290, .95); v.gauge.position.set(1.12, .75, .1); v.gauge.visible = false; g.add(v.gauge);
-      label('コンロ');
+      label('てっぱん');
       break;
     }
     case 'plates': {
-      for (let i = 0; i < 5; i++) { const p = plateMesh([]); p.position.y = i * .075; g.add(p); }
-      label('おさら');
+      for (let i = 0; i < 4; i++) { const p = bunMesh([]); p.position.y = i * .15; g.add(p); }
+      label('バンズ');
       break;
     }
     case 'spot': {
@@ -1113,7 +1127,7 @@ function buildModel(v) {
       m.rotation.x = -Math.PI / 2; m.position.y = .01; g.add(m);
       v.slot.position.y = .01;
       v.done = bubbleSprite('できた！'); v.done.position.set(0, 1.05, .2); v.done.visible = false; g.add(v.done);
-      if (v.id === 'spot1') label('もりつけ', 1.2);
+      if (v.id === 'spot1') label('トレー', 1.2);
       break;
     }
     case 'bell': {
@@ -1148,7 +1162,7 @@ function syncStations(dt) {
       const k = itemKey(s.item);
       if (k !== v.key) {
         if (v.itemObj) { v.slot.remove(v.itemObj); disposeTree(v.itemObj); v.itemObj = null; }
-        if (s.item) { v.itemObj = s.item.kind === 'plate' ? plateMesh(s.item.items) : foodMesh(s.item, s.type === 'stove'); v.slot.add(v.itemObj); v.itemObj.scale.setScalar(.6); }
+        if (s.item) { v.itemObj = s.item.kind === 'plate' ? bunMesh(s.item.items) : foodMesh(s.item, s.type === 'stove'); v.slot.add(v.itemObj); v.itemObj.scale.setScalar(.6); }
         v.key = k;
       }
       if (v.itemObj && v.itemObj.scale.x < 1) v.itemObj.scale.setScalar(Math.min(1, v.itemObj.scale.x + dt * 5));
@@ -1229,7 +1243,7 @@ function makeTicket(o) {
     const d = ING[ing];
     const marks = (d.cut ? '🔪' : '') + (d.cook ? '🔥' : '');
     return `<span>${ING_EMO[ing]}<small>${marks || '　'}</small></span>`;
-  }).join('<span>＋</span>');
+  }).join('');
   el.innerHTML = `<div class="no">ちゅうもん ${String(o.id).padStart(2, '0')}</div><div class="dish">${DISH_EMO[o.recipe]}</div>
     <div class="name">${r.name}</div><div class="steps">${steps}</div>` + (o.total > 0 ? '<div class="bar"><i></i></div>' : '');
   return el;
@@ -1254,14 +1268,16 @@ function syncOrders() {
 function clearOrdersHUD() { ticketEls.clear(); ordersEl.innerHTML = ''; }
 function itemView(it) {
   if (!it) return { emo: '✋', txt: 'からっぽ' };
-  if (it.kind === 'plate') return { emo: '🍽️', txt: it.items.length ? 'おさら ' + it.items.map(i => ING_EMO[i]).join('') : 'おさら' };
+  if (it.kind === 'plate') {
+    const done = it.items.length && plateRecipe(S, it);
+    return { emo: done ? '🍔' : '🍞', txt: 'バンズ ' + it.items.map(i => ING_EMO[i]).join('') };
+  }
   const d = ING[it.ing];
   let st;
   if (needsCut(it)) st = 'きる まえ';
   else if (d.cook && !isCooked(it, S.L)) st = 'やく まえ';
   else st = 'できあがり';
-  const emo = it.ing === 'egg' && isCooked(it, S.L) ? '🍳' : ING_EMO[it.ing];
-  return { emo, txt: `${d.name}（${st}）` };
+  return { emo: ING_EMO[it.ing], txt: `${d.name}（${st}）` };
 }
 const handKeys = { A: null, B: null };
 function syncHands() {
@@ -1289,15 +1305,15 @@ function popup(text, x, y) {
 const FAIL_MSG = {
   area: 'そこは あいての ばしょだよ',
   handfull: 'てが いっぱい！ どこかに おいてね',
-  plateNo: 'その おさらには のせられないよ',
-  needplate: 'さきに おさらを おいてね',
+  plateNo: 'その バンズには のせられないよ',
+  needplate: 'さきに バンズを おいてね',
   notready: 'まだ できあがって いないよ',
   cutfirst: 'さきに まないたで きってね',
   cantcook: 'それは やかなくて いいよ',
   cantcut: 'それは きらなくて いいよ',
-  needdish: 'できた おさらを もってきてね',
-  incomplete: 'まだ りょうりが そろって いないよ',
-  nomatch: 'ちゅうもんに ない りょうりだよ',
+  needdish: 'できた バーガーを もってきてね',
+  incomplete: 'まだ ぐざいが そろって いないよ',
+  nomatch: 'ちゅうもんに ない バーガーだよ',
   full: 'もう なにか おいて あるよ',
 };
 
@@ -1407,8 +1423,8 @@ function showTitle(step = 'mode') {
   const card = $('titleCard');
   if (step === 'mode') {
     card.innerHTML = `
-      <div class="logo"><span class="big"><ruby>大混雑<rt>だいこんざつ</rt></ruby>キッチン</span></div>
-      <p class="lead">つぎつぎ くる ${R('注文', 'ちゅうもん')}に あわせて、きる・やく・もりつける！<br>なんにんで あそぶ？</p>
+      <div class="logo"><span class="big"><ruby>大混雑<rt>だいこんざつ</rt></ruby>キッチン</span><div class="shop">🍔 ハンバーガーやさん</div></div>
+      <p class="lead">つぎつぎ くる ${R('注文', 'ちゅうもん')}に あわせて、きる・やく・はさむ！<br>なんにんで あそぶ？</p>
       <div class="choices">
         <button class="choice" data-mode="solo"><span class="ic">🧑‍🍳</span><span class="t">ひとりで</span><span>ぜんぶ じぶんで つくる</span></button>
         <button class="choice" data-mode="duo"><span class="ic">🧑‍🍳🧑‍🍳</span><span class="t">ふたりで</span><span>1だいの iPadを ふたりで。<br>ひだりと みぎで ${R('分担', 'ぶんたん')}</span></button>
@@ -1417,12 +1433,12 @@ function showTitle(step = 'mode') {
   } else {
     const who = chosenMode === 'duo' ? 'ふたりで' : 'ひとりで';
     card.innerHTML = `
-      <div class="logo"><span class="big"><ruby>大混雑<rt>だいこんざつ</rt></ruby>キッチン</span></div>
+      <div class="logo"><span class="big"><ruby>大混雑<rt>だいこんざつ</rt></ruby>キッチン</span><div class="shop">🍔 ハンバーガーやさん</div></div>
       <p class="lead">${who} あそぶ ── レベルを えらんでね</p>
       <div class="choices">
-        <button class="choice lv1" data-lv="1"><span class="t">レベル1</span><span class="ic">🍳</span><span>めだまやき だけ。<br>じかんぎれ なし。ゆっくり おぼえよう</span></button>
-        <button class="choice lv2" data-lv="2"><span class="t">レベル2</span><span class="ic">🍳🥗</span><span>サラダが ふえる。<br>きる・おさらを だす</span></button>
-        <button class="choice lv3" data-lv="3"><span class="t">レベル3</span><span class="ic">🍳🥗🥩</span><span>サイコロステーキも。<br>とても いそがしい！</span></button>
+        <button class="choice lv1" data-lv="1"><span class="t">レベル1</span><span class="ic">🍔</span><span>ハンバーガー だけ。<br>じかんぎれ なし。ゆっくり おぼえよう</span></button>
+        <button class="choice lv2" data-lv="2"><span class="t">レベル2</span><span class="ic">🍔🍅</span><span>トマトバーガーが ふえる。<br>きる・バンズを おく</span></button>
+        <button class="choice lv3" data-lv="3"><span class="t">レベル3</span><span class="ic">🍔🥓🥬</span><span>ベーコンレタスバーガーも。<br>てっぱんが とりあいに！</span></button>
       </div>
       <div class="row back"><button class="btn sub" id="backBtn">もどる</button></div>`;
     card.querySelectorAll('[data-lv]').forEach(b => b.addEventListener('click', () => { Snd.init(); chosenLevel = +b.dataset.lv; startGame(chosenMode, chosenLevel); }));
@@ -1435,11 +1451,11 @@ function flowRow(name, nodes) {
 }
 function howtoHTML(inGame) {
   const lv = S.level, duo = S.duo, L = S.L;
-  let flows = flowRow('めだまやき', [['🥚', 'たまご'], ['🔥', 'コンロ'], ['🍽️', 'もりつけ'], ['🛎️', 'だしぐち']]);
-  if (lv >= 2) flows += flowRow('サラダ', [['🥬🍅', 'レタス・トマト'], ['🔪', 'まないた'], ['🍽️', 'もりつけ'], ['🛎️', 'だしぐち']]);
-  if (lv >= 3) flows += flowRow('サイコロステーキ', [['🥩', 'にく'], ['🔪', 'まないた'], ['🔥', 'コンロ'], ['🍽️＋🍅', 'もりつけ'], ['🛎️', 'だしぐち']]);
+  let flows = flowRow('ハンバーガー', [['🥩', 'パティ'], ['🔥', 'てっぱん'], ['🍞', 'バンズ'], ['🛎️', 'だしぐち']]);
+  if (lv >= 2) flows += flowRow('トマトバーガー', [['🥩', 'パティ'], ['🔥', 'てっぱん'], ['🍞＋🍅', 'バンズ（トマトは 🔪で きる）'], ['🛎️', 'だしぐち']]);
+  if (lv >= 3) flows += flowRow('ベーコンレタス', [['🥩🥓', 'パティ・ベーコン'], ['🔥', 'てっぱん'], ['🍞＋🥬', 'バンズ（レタスは 🔪で きる）'], ['🛎️', 'だしぐち']]);
   const boxes = [];
-  boxes.push(`<div class="hbox wide"><h3>${R('注文', 'ちゅうもん')}を みて りょうりを つくろう</h3>
+  boxes.push(`<div class="hbox wide"><h3>${R('注文', 'ちゅうもん')}を みて バーガーを つくろう</h3>
     うえの カードが ${R('注文', 'ちゅうもん')}だよ。🔪は きる、🔥は やく、という しるし。${L.orderTime ? 'バーが なくなる まえに だそう。' : 'レベル1は じかんぎれ なし。'}
     ${flows}</div>`);
   boxes.push(`<div class="hbox"><h3>そうさは タップだけ</h3>
@@ -1447,15 +1463,15 @@ function howtoHTML(inGame) {
     おける ばしょは ひかるよ。${lv >= 2 ? '<br>まないたは なんども タップして きる（トントン）。' : ''}</div>`);
   boxes.push(`<div class="hbox"><h3>こがさない ように！</h3>
     <div class="gauges"><div><span class="g g1"></span>やいてる</div><div><span class="g g2"></span>OK！ おろす</div><div><span class="g g3"></span>あぶない</div><div><span class="g g4"></span>こげた</div></div>
-    こげたら コンロを タップして かたづけよう。</div>`);
-  if (lv >= 2) boxes.push(`<div class="hbox"><h3>おさらを わすれずに</h3>
-    「おさら」を タップして もち、「もりつけ」に おいてから りょうりを のせよう。
-    <br>おさらを もって べつの おさらを タップすると、まとめられるよ。</div>`);
+    こげたら てっぱんを タップして かたづけよう。</div>`);
+  if (lv >= 2) boxes.push(`<div class="hbox"><h3>バンズを わすれずに</h3>
+    「バンズ」を タップして もち、「トレー」に おいてから ぐざいを のせよう。ぐざいが そろうと うえの バンズが のるよ。
+    <br>バンズを もって べつの バンズを タップすると、まとめられるよ。</div>`);
   if (duo) boxes.push(`<div class="hbox wide"><h3>ふたりの ${R('分担', 'ぶんたん')}</h3>
     <div class="ipad">
-      <div class="l"><b>ひだりの ひと</b><span class="ems">🥚${lv >= 2 ? '🥬🍅' : ''}${lv >= 3 ? '🥩' : ''}${lv >= 2 ? '🔪' : ''}</span>ざいりょうを とりだす${lv >= 2 ? '・きる' : ''}</div>
+      <div class="l"><b>ひだりの ひと</b><span class="ems">🥩${lv >= 2 ? '🍅' : ''}${lv >= 3 ? '🥓🥬' : ''}${lv >= 2 ? '🔪' : ''}</span>ざいりょうを とりだす${lv >= 2 ? '・きる' : ''}</div>
       <div class="m">うけ<br>わたし</div>
-      <div class="r"><b>みぎの ひと</b><span class="ems">🔥🍽️🛎️</span>やく・もりつける・だす</div>
+      <div class="r"><b>みぎの ひと</b><span class="ems">🔥🍞🛎️</span>やく・バンズに のせる・だす</div>
     </div>
     まん${R('中', 'なか')}の「うけわたし」に おいて、あいてに わたそう。こえを かけあうのが コツ！</div>`);
   else if (lv === 1) boxes.push(`<div class="hbox"><h3>やじるしを みてね</h3>あかい やじるしが、つぎに さわる ばしょを おしえて くれるよ。</div>`);
@@ -1495,14 +1511,14 @@ function startGame(mode, level, seed) {
 function showResult() {
   const th = CFG.stars[S.duo ? 'duo' : 'solo'][S.level];
   const stars = [0, 1, 2].map(i => `<span class="${i < S.stars ? 'on' : 'off'}">★</span>`).join('');
-  const msg = ['もう いちど チャレンジ！', 'いい ちょうし！', 'すごい！ にんきの おみせ！', 'だいせいこう！ プロの りょうりにん！'][S.stars];
-  const next = S.stars < 3 ? `<p>★を ふやすには あと <b>${th[S.stars] - S.served}</b> さら</p>` : '';
+  const msg = ['もう いちど チャレンジ！', 'いい ちょうし！', 'すごい！ おきゃくさんも にっこり！', 'だいせいこう！ にんきの バーガーやさん！'][S.stars];
+  const next = S.stars < 3 ? `<p>★を ふやすには あと <b>${th[S.stars] - S.served}</b> こ</p>` : '';
   $('resultCard').innerHTML = `
     <h2 style="margin:0;font-size:30px">しゅうりょう！</h2>
     <div class="stars">${stars}</div>
     <p class="msg">${msg}</p>${next}
     <div class="nums">
-      <div>できた りょうり<b>${S.served} さら</b></div>
+      <div>できた バーガー<b>${S.served} こ</b></div>
       ${S.L.orderTime ? `<div>まにあわなかった<b>${S.missed}</b></div>` : ''}
       <div>こげた<b>${S.burntCount}</b></div>
       <div>てんすう<b>${S.score}</b></div>
